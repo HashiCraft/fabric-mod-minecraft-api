@@ -1,16 +1,17 @@
 {
   "schemaVersion": 1,
-  "id": "modid",
+  "id": "minecraft-api",
   "version": "${version}",
 
-  "name": "Example Mod",
-  "description": "This is an example description! Tell everyone what your mod is about!",
+  "name": "Minecraft API",
+  "description": "RESTFul API for Mincrcraft",
   "authors": [
-    "Me!"
+    "Nic Jackson",
+    "Erik Veld"
   ],
   "contact": {
-    "homepage": "https://fabricmc.net/",
-    "sources": "https://github.com/FabricMC/fabric-example-mod"
+    "homepage": "https://github.com/hashicraft/fabric-mod-minecraft-api",
+    "sources": "https://github.com/hashicraft/fabric-mod-minecraft-api"
   },
 
   "license": "CC0-1.0",
@@ -19,12 +20,9 @@
   "environment": "*",
   "entrypoints": {
     "main": [
-      "net.fabricmc.example.ExampleMod"
+      "com.hashicraft.minecraftapi.APIMod"
     ]
   },
-  "mixins": [
-    "modid.mixins.json"
-  ],
 
   "depends": {
     "fabricloader": ">=0.14.6",

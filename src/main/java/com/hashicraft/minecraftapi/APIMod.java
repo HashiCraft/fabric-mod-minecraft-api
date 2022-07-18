@@ -1,14 +1,20 @@
-package net.fabricmc.example;
+package com.hashicraft.minecraftapi;
 
-import net.fabricmc.api.ModInitializer;
+import com.hashicraft.minecraftapi.server.Server;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ExampleMod implements ModInitializer {
+import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.minecraft.server.MinecraftServer;
+
+public class APIMod implements ModInitializer {
 	// This logger is used to write text to the console and the log file.
 	// It is considered best practice to use your mod id as the logger's name.
 	// That way, it's clear which mod wrote info, warnings, and errors.
 	public static final Logger LOGGER = LoggerFactory.getLogger("modid");
+  public static final Server apiServer = new Server();
 
 	@Override
 	public void onInitialize() {
@@ -17,5 +23,10 @@ public class ExampleMod implements ModInitializer {
 		// Proceed with mild caution.
 
 		LOGGER.info("Hello Fabric world!");
+
+	ServerLifecycleEvents.SERVER_STARTED.register((MinecraftServer server) ->   {
+      // start the server
+      apiServer.start(server);
+		});
 	}
 }

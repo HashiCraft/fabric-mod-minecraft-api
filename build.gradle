@@ -29,8 +29,7 @@ dependencies {
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 
 
-  implementation group: 'io.javalin', name: 'javalin', version: '4.6.4'
-  implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.13.3'
+  implementation group: 'io.javalin', name: 'javalin-bundle', version: '4.6.4'
 }
 
 processResources {

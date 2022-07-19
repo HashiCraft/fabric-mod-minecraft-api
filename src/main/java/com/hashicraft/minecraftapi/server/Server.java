@@ -1,24 +1,45 @@
 package com.hashicraft.minecraftapi.server;
 
-import com.hashicraft.minecraftapi.server.models.Block;
+import com.hashicraft.minecraftapi.server.handlers.BlocksDELETE;
+import com.hashicraft.minecraftapi.server.handlers.BlocksGET;
+import com.hashicraft.minecraftapi.server.handlers.BlocksPOST;
+import com.mojang.authlib.yggdrasil.response.ErrorResponse;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.javalin.Javalin;
-import net.minecraft.block.BlockState;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.registry.Registry;
+
+import io.javalin.plugin.openapi.OpenApiOptions;
+import io.javalin.plugin.openapi.OpenApiPlugin;
+import io.javalin.plugin.openapi.ui.ReDocOptions;
+import io.javalin.plugin.openapi.ui.SwaggerOptions;
+import io.swagger.v3.oas.models.info.Info;
 
 public class Server {
   private Javalin app;
 	public final Logger LOGGER = LoggerFactory.getLogger("server");
 
   public Server() {
-    app = Javalin.create();
+    app = Javalin.create(config -> {
+      config.registerPlugin(getConfiguredOpenApiPlugin());
+      config.defaultContentType = "application/json";
+    });
+  }
+
+  private static OpenApiPlugin getConfiguredOpenApiPlugin() {
+    Info info = new Info().version("1.0").description("User API");
+    OpenApiOptions options = new OpenApiOptions(info)
+      .activateAnnotationScanningFor("io.javalin.example.java")
+      .path("/swagger-docs") // endpoint for OpenAPI json
+      .swagger(new SwaggerOptions("/swagger-ui")) // endpoint for swagger-ui
+      .reDoc(new ReDocOptions("/redoc")) // endpoint for redoc
+      .defaultDocumentation(doc -> {
+        doc.json("500", ErrorResponse.class);
+        doc.json("503", ErrorResponse.class);
+      });
+    return new OpenApiPlugin(options);
   }
 
   public void start(MinecraftServer server) {
@@ -26,78 +47,15 @@ public class Server {
     LOGGER.info("Starting server");
 
     // get the details of a block
-    this.app.get("/blocks/{x}/{y}/{z}", ctx -> {
-      int x = Integer.parseInt(ctx.pathParam("x"));
-      int y = Integer.parseInt(ctx.pathParam("y"));
-      int z = Integer.parseInt(ctx.pathParam("z"));
-
-      LOGGER.info("Blocks GET called x:{}, y:{}, z:{}",x,y,z);
-
-      ServerWorld world = server.getOverworld();
-      BlockPos pos = new BlockPos(x,y,z);
-
-      BlockState state = world.getBlockState(pos);
-
-      if (state == null) {
-        ctx.res.sendError(404, "Block not found");
-        return;
-      }
-
-      Block block = new Block();
-      block.setX(x);
-      block.setY(y);
-      block.setZ(z);
-      block.setType(state.getBlock().getRegistryEntry().registryKey().getValue().toString());
-
-      ctx.json(block);
-    });
+    BlocksGET blocksGet = new BlocksGET(server.getOverworld());
+    this.app.get("/blocks/{x}/{y}/{z}",  blocksGet);
 
     // create a new block
-    this.app.post("/blocks",ctx -> {
-      Block block = ctx.bodyAsClass(Block.class);
+    BlocksPOST blocksPOST = new BlocksPOST(server.getOverworld());
+    this.app.post("/blocks",blocksPOST);
 
-      LOGGER.info("Blocks POST called x:{}, y:{}, z:{} type:{}",block.getX(),block.getY(),block.getZ(),block.getType());
-
-      ServerWorld world = server.getOverworld();
-      var item = Registry.BLOCK.get(new Identifier(block.getType()));
-      if (item==null) {
-        ctx.res.sendError(500,"Unable to create block " + block.getType());
-        return;
-      }
-
-      BlockPos pos = new BlockPos(block.getX(),block.getY(),block.getZ());
-      boolean didSet = world.setBlockState(pos,item.getDefaultState());
-
-      if (!didSet) {
-        LOGGER.error("Unable to place block {} at {},{},{}",block.getType(),block.getX(),block.getY(),block.getZ());
-        ctx.res.sendError(500,"Unable to place block");
-      }
-    });
-
-    this.app.delete("/blocks/{x}/{y}/{z}",ctx -> {
-      int x = Integer.parseInt(ctx.pathParam("x"));
-      int y = Integer.parseInt(ctx.pathParam("y"));
-      int z = Integer.parseInt(ctx.pathParam("z"));
-
-      LOGGER.info("Blocks GET called x:{}, y:{}, z:{}",x,y,z);
-
-      ServerWorld world = server.getOverworld();
-      BlockPos pos = new BlockPos(x,y,z);
-
-      BlockState state = world.getBlockState(pos);
-
-      if (state == null) {
-        ctx.res.sendError(404, "Block not found");
-        return;
-      }
-
-      boolean didBreak = world.breakBlock(new BlockPos(x,y,z),false);
-
-      if (!didBreak) {
-        LOGGER.error("Unable to delete block {} at {},{},{}",state.getBlock().getRegistryEntry().registryKey().getValue().toString(), x,y,z);
-        ctx.res.sendError(500,"Unable to place block");
-      }
-    });
+    BlocksDELETE blocksDELETE = new BlocksDELETE(server.getOverworld());
+    this.app.delete("/blocks/{x}/{y}/{z}",blocksDELETE);
   }
 
 }

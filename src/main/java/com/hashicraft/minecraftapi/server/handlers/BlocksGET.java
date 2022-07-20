@@ -45,6 +45,13 @@ public class BlocksGET implements Handler {
 
       BlockState state = world.getBlockState(pos);
 
+      String material = state.getBlock().getRegistryEntry().registryKey().getValue().toString();
+
+      // if air no block
+      if (material.contains("minecraft:air")) {
+        state = null;
+      }
+
       if (state == null) {
         ctx.res.sendError(404, "Block not found");
         return;
@@ -54,7 +61,7 @@ public class BlocksGET implements Handler {
       block.setX(x);
       block.setY(y);
       block.setZ(z);
-      block.setType(state.getBlock().getRegistryEntry().registryKey().getValue().toString());
+      block.setMaterial(material);
 
       ctx.json(block);
   }

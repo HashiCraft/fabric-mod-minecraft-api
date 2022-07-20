@@ -5,7 +5,7 @@ public class Block {
   private int x;
   private int y;
   private int z;
-  private String type;
+  private String material;
 
   public int getX() {
     return this.x;
@@ -31,12 +31,12 @@ public class Block {
     this.z = z;
   }
 
-  public String getType() {
-    return this.type;
+  public String getMaterial() {
+    return this.material;
   }
 
-  public void setType(String type) {
-    this.type= type;
+  public void setMaterial(String material) {
+    this.material = material;
   }
 
   public Block() {

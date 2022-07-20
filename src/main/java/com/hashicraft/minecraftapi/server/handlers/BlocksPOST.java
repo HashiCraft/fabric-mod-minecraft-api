@@ -12,7 +12,6 @@ import io.javalin.plugin.openapi.annotations.OpenApi;
 import io.javalin.plugin.openapi.annotations.OpenApiContent;
 import io.javalin.plugin.openapi.annotations.OpenApiRequestBody;
 import io.javalin.plugin.openapi.annotations.OpenApiResponse;
-import net.minecraft.block.Blocks;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
@@ -41,11 +40,11 @@ public class BlocksPOST implements Handler {
   public void handle(Context ctx) throws Exception {
       Block block = ctx.bodyAsClass(Block.class);
 
-      LOGGER.info("Blocks POST called x:{}, y:{}, z:{} type:{}",block.getX(),block.getY(),block.getZ(),block.getType());
+      LOGGER.info("Blocks POST called x:{}, y:{}, z:{} type:{}",block.getX(),block.getY(),block.getZ(),block.getMaterial());
 
-      var item = Registry.BLOCK.get(new Identifier(block.getType()));
+      var item = Registry.BLOCK.get(new Identifier(block.getMaterial()));
       if (item==null) {
-        ctx.res.sendError(500,"Unable to create block " + block.getType());
+        ctx.res.sendError(500,"Unable to create block " + block.getMaterial());
         return;
       }
 
@@ -53,7 +52,7 @@ public class BlocksPOST implements Handler {
       boolean didSet = world.setBlockState(pos,item.getDefaultState());
 
       if (!didSet) {
-        LOGGER.error("Unable to place block {} at {},{},{}",block.getType(),block.getX(),block.getY(),block.getZ());
+        LOGGER.error("Unable to place block {} at {},{},{}",block.getMaterial(),block.getX(),block.getY(),block.getZ());
         ctx.res.sendError(500,"Unable to place block");
       }
   }

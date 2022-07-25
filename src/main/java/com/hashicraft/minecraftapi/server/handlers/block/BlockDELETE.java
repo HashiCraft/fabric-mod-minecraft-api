@@ -1,4 +1,4 @@
-package com.hashicraft.minecraftapi.server.handlers;
+package com.hashicraft.minecraftapi.server.handlers.block;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,17 +12,17 @@ import net.minecraft.block.BlockState;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 
-public class BlocksDELETE implements Handler {
+public class BlockDELETE implements Handler {
 
 	private final Logger LOGGER = LoggerFactory.getLogger("server");
   private final ServerWorld world;
 
-  public BlocksDELETE(ServerWorld world) {
+  public BlockDELETE(ServerWorld world) {
     this.world = world;
   }
 
   @OpenApi(
-      path = "/blocks",            // only necessary to include when using static method references
+      path = "/block",            // only necessary to include when using static method references
       method = HttpMethod.DELETE,
       summary = "Delete a single block",
       operationId = "deleteSingleBlock",
@@ -36,11 +36,19 @@ public class BlocksDELETE implements Handler {
       int y = Integer.parseInt(ctx.pathParam("y"));
       int z = Integer.parseInt(ctx.pathParam("z"));
 
-      LOGGER.info("Blocks GET called x:{}, y:{}, z:{}",x,y,z);
+      LOGGER.info("Block DELETE called x:{}, y:{}, z:{}",x,y,z);
 
       BlockPos pos = new BlockPos(x,y,z);
 
       BlockState state = world.getBlockState(pos);
+
+
+      String material = state.getBlock().getRegistryEntry().registryKey().getValue().toString();
+
+      // if air no block
+      if (material.contains("minecraft:air")) {
+        state = null;
+      }
 
       if (state == null) {
         ctx.res.sendError(404, "Block not found");

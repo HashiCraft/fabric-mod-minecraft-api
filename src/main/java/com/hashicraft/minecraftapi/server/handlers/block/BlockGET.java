@@ -1,4 +1,4 @@
-package com.hashicraft.minecraftapi.server.handlers;
+package com.hashicraft.minecraftapi.server.handlers.block;
 
 import com.hashicraft.minecraftapi.server.models.Block;
 
@@ -13,14 +13,17 @@ import io.javalin.plugin.openapi.annotations.OpenApiContent;
 import io.javalin.plugin.openapi.annotations.OpenApiResponse;
 import net.minecraft.block.BlockState;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.state.property.BooleanProperty;
+import net.minecraft.state.property.DirectionProperty;
+import net.minecraft.state.property.Property;
 import net.minecraft.util.math.BlockPos;
 
-public class BlocksGET implements Handler {
+public class BlockGET implements Handler {
 
 	private final Logger LOGGER = LoggerFactory.getLogger("server");
   private final ServerWorld world;
 
-  public BlocksGET(ServerWorld world) {
+  public BlockGET(ServerWorld world) {
     this.world = world;
   }
 
@@ -62,6 +65,18 @@ public class BlocksGET implements Handler {
       block.setY(y);
       block.setZ(z);
       block.setMaterial(material);
+
+      var entries = state.getEntries();
+      entries.forEach((k,v) -> {
+        LOGGER.info("{} {}",k, v.toString());
+        if (k.getName().equals("facing")) {
+          block.setFacing(v.toString());
+        }
+
+        if (k.getName().equals("half")) {
+          block.setHalf(v.toString());
+        }
+      });
 
       ctx.json(block);
   }

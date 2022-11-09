@@ -3,6 +3,7 @@ package com.hashicraft.minecraftapi.server.handlers.blocks;
 import java.util.ArrayList;
 
 import com.hashicraft.minecraftapi.server.models.Block;
+import com.hashicraft.minecraftapi.server.util.Util;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -90,7 +91,7 @@ public class BlocksGET implements Handler {
               continue;
             }
 
-            String material = state.getBlock().getRegistryEntry().registryKey().getValue().toString();
+            String material = Util.getIdentifierAtPosition(world, pos);
 
             Block block = new Block();
             // set to the local coordinate not the absolute coordinates as this may be placed at a different

@@ -3,6 +3,8 @@ package com.hashicraft.minecraftapi.server.handlers.block;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.hashicraft.minecraftapi.server.util.Util;
+
 import io.javalin.http.Context;
 import io.javalin.http.Handler;
 import io.javalin.plugin.openapi.annotations.HttpMethod;
@@ -39,18 +41,10 @@ public class BlockDELETE implements Handler {
       LOGGER.info("Block DELETE called x:{}, y:{}, z:{}",x,y,z);
 
       BlockPos pos = new BlockPos(x,y,z);
-
-      BlockState state = world.getBlockState(pos);
-
-
-      String material = state.getBlock().getRegistryEntry().registryKey().getValue().toString();
+      String material = Util.getIdentifierAtPosition(world, pos);
 
       // if air no block
-      if (material.contains("minecraft:air")) {
-        state = null;
-      }
-
-      if (state == null) {
+      if (material.contains("minecraft:air") || material.isBlank()) {
         ctx.res.sendError(404, "Block not found");
         return;
       }
@@ -58,7 +52,7 @@ public class BlockDELETE implements Handler {
       boolean didBreak = world.breakBlock(new BlockPos(x,y,z),false);
 
       if (!didBreak) {
-        LOGGER.error("Unable to delete block {} at {},{},{}",state.getBlock().getRegistryEntry().registryKey().getValue().toString(), x,y,z);
+        LOGGER.error("Unable to delete block {} at {},{},{}", material, x,y,z);
         ctx.res.sendError(500,"Unable to place block");
       }
   }

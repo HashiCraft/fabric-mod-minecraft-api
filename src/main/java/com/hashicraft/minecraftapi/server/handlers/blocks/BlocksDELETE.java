@@ -11,6 +11,7 @@ import io.javalin.plugin.openapi.annotations.OpenApiResponse;
 import net.minecraft.block.BlockState;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
+import com.hashicraft.minecraftapi.server.util.Util;
 
 public class BlocksDELETE implements Handler {
 
@@ -74,21 +75,17 @@ public class BlocksDELETE implements Handler {
             LOGGER.info("Block DELETE called x:{}, y:{}, z:{}",x,y,z);
 
             BlockPos pos = new BlockPos(x,y,z);
-
-            BlockState state = world.getBlockState(pos);
-
-
-            String material = state.getBlock().getRegistryEntry().registryKey().getValue().toString();
+            String material = Util.getIdentifierAtPosition(world, pos);
 
             // if air no block
-            if (material.equals("minecraft:air") || state == null) {
+            if (material.equals("minecraft:air") || material.isBlank()) {
               continue;
             }
 
             boolean didBreak = world.breakBlock(pos, false);
 
             if (!didBreak) {
-              LOGGER.error("Unable to delete block {} at {},{},{}",state.getBlock().getRegistryEntry().registryKey().getValue().toString(), x,y,z);
+              LOGGER.error("Unable to delete block {} at {},{},{}", material, x,y,z);
             }
 
           }

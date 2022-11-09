@@ -1,13 +1,17 @@
 package com.hashicraft.minecraftapi;
 
-import com.hashicraft.minecraftapi.server.Server;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.hashicraft.minecraftapi.server.Server;
+
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.command.v1.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.text.LiteralText;
+import net.minecraft.util.math.Vec3d;
+import static net.minecraft.server.command.CommandManager.*;
 
 public class APIMod implements ModInitializer {
 	// This logger is used to write text to the console and the log file.
@@ -24,7 +28,20 @@ public class APIMod implements ModInitializer {
 
 		LOGGER.info("Hello Fabric world!");
 
-	ServerLifecycleEvents.SERVER_STARTED.register((MinecraftServer server) ->   {
+    // Register the postion command
+    CommandRegistrationCallback.EVENT.register((dispatcher, environment) -> 
+        dispatcher.register(
+        literal("position").executes(context -> {
+          Vec3d pos = context.getSource().getPosition();
+          context.getSource().sendFeedback(  
+            new LiteralText(  
+              String.format("your position is: %d, %d, %d", Math.round(pos.getX()), Math.round(pos.getY()), Math.round(pos.getZ())))
+            , false);
+          return 1;
+      }))
+    );
+
+	  ServerLifecycleEvents.SERVER_STARTED.register((MinecraftServer server) ->   {
       // start the server
       apiServer.start(server);
 		});

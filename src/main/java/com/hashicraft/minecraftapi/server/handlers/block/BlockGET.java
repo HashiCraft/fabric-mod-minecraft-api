@@ -1,6 +1,7 @@
 package com.hashicraft.minecraftapi.server.handlers.block;
 
 import com.hashicraft.minecraftapi.server.models.Block;
+import com.hashicraft.minecraftapi.server.util.Util;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,9 +14,6 @@ import io.javalin.plugin.openapi.annotations.OpenApiContent;
 import io.javalin.plugin.openapi.annotations.OpenApiResponse;
 import net.minecraft.block.BlockState;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.state.property.BooleanProperty;
-import net.minecraft.state.property.DirectionProperty;
-import net.minecraft.state.property.Property;
 import net.minecraft.util.math.BlockPos;
 
 public class BlockGET implements Handler {
@@ -45,17 +43,11 @@ public class BlockGET implements Handler {
       LOGGER.info("Blocks GET called x:{}, y:{}, z:{}",x,y,z);
 
       BlockPos pos = new BlockPos(x,y,z);
-
       BlockState state = world.getBlockState(pos);
 
-      String material = state.getBlock().getRegistryEntry().registryKey().getValue().toString();
+      String material = Util.getIdentifierAtPosition(world, pos);
 
-      // if air no block
-      if (material.contains("minecraft:air")) {
-        state = null;
-      }
-
-      if (state == null) {
+      if (material.contains("minecraft:air") || material.isBlank()) {
         ctx.res.sendError(404, "Block not found");
         return;
       }

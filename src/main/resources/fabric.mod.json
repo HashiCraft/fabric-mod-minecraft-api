@@ -2,7 +2,6 @@
   "schemaVersion": 1,
   "id": "minecraft-api",
   "version": "${version}",
-
   "name": "Minecraft API",
   "description": "RESTFul API for Mincrcraft",
   "authors": [
@@ -13,21 +12,18 @@
     "homepage": "https://github.com/hashicraft/fabric-mod-minecraft-api",
     "sources": "https://github.com/hashicraft/fabric-mod-minecraft-api"
   },
-
   "license": "CC0-1.0",
   "icon": "assets/modid/icon.png",
-
   "environment": "*",
   "entrypoints": {
     "main": [
       "com.hashicraft.minecraftapi.APIMod"
     ]
   },
-
   "depends": {
     "fabricloader": ">=0.14.6",
     "fabric": "*",
-    "minecraft": "~1.19",
+    "minecraft": "~1.18",
     "java": ">=17"
   },
   "suggests": {

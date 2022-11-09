@@ -1,6 +1,7 @@
 package com.hashicraft.minecraftapi.server.handlers.blocks;
 
 import com.hashicraft.minecraftapi.server.models.Block;
+import com.hashicraft.minecraftapi.server.util.Util;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,14 +63,15 @@ public class BlocksPOST implements Handler {
       LOGGER.info("Place block x:{}, y:{}, z:{} material: {}",pos.getX(),pos.getY(),pos.getZ(),block.getMaterial());
 
       BlockState state = world.getBlockState(pos);
-      String material = state.getBlock().getRegistryEntry().registryKey().getValue().toString();
+      String material = Util.getIdentifierAtPosition(world, pos);
+
 
       // if there is an existing block that is not air remove it
       if (state != null && !material.equals("minecraft:air")) {
         boolean didBreak = world.breakBlock(pos, false);
 
         if (!didBreak) {
-          LOGGER.error("Unable to delete block {} at {},{},{}",state.getBlock().getRegistryEntry().registryKey().getValue().toString(), x,y,z);
+          LOGGER.error("Unable to delete block {} at {},{},{}", material, x,y,z);
           ctx.res.sendError(500,"Unable to place block");
         }
       }
@@ -80,7 +82,6 @@ public class BlocksPOST implements Handler {
       }
 
       state = item.getDefaultState();
-
       try {
         switch(block.getFacing()) {
           case "north":

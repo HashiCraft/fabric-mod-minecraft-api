@@ -1,0 +1,15 @@
+resourceRole:
+  - /blocks===get===[role1]
+  - /blocks===delete===[role1]
+  - /blocks===post===[role1]
+  - /block===get===[role1]
+  - /block===delete===[role1]
+  - /block===post===[role1]
+
+excludedResource:
+  - /health
+
+account:
+  - appId: admin
+    credential: topsecret
+    role: [role1]

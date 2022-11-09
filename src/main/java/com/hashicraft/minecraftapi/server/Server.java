@@ -41,6 +41,11 @@ public class Server {
     });
 
     app.before(ctx -> {
+      // skip auth check for health path
+      if (ctx.req.getPathInfo().contentEquals("/health") && ctx.req.getMethod().contentEquals("GET")) {
+        return;
+      }
+
       String authHeader = ctx.req.getHeader(AUTH_HEADER);
       if (authHeader == null || !authHeader.contentEquals(this.apiKey)) {
         LOGGER.info("not authorized apikey: {}", authHeader);

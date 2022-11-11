@@ -1,17 +1,19 @@
 package com.hashicraft.minecraftapi.server.handlers.block;
 
-import com.hashicraft.minecraftapi.server.models.Block;
-import com.hashicraft.minecraftapi.server.util.Util;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.hashicraft.minecraftapi.server.models.Block;
+import com.hashicraft.minecraftapi.server.util.Util;
+
 import io.javalin.http.Context;
 import io.javalin.http.Handler;
-import io.javalin.plugin.openapi.annotations.HttpMethod;
-import io.javalin.plugin.openapi.annotations.OpenApi;
-import io.javalin.plugin.openapi.annotations.OpenApiContent;
-import io.javalin.plugin.openapi.annotations.OpenApiResponse;
+import io.javalin.openapi.HttpMethod;
+import io.javalin.openapi.OpenApi;
+import io.javalin.openapi.OpenApiContent;
+import io.javalin.openapi.OpenApiParam;
+import io.javalin.openapi.OpenApiResponse;
+import io.javalin.openapi.OpenApiSecurity;
 import net.minecraft.block.BlockState;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
@@ -26,13 +28,23 @@ public class BlockGET implements Handler {
   }
 
   @OpenApi(
-      path = "/blocks",            // only necessary to include when using static method references
-      method = HttpMethod.GET,    // only necessary to include when using static method references
-      summary = "Get a single block",
+      path = "/v1/block/{x}/{y}/{z}",
+      methods = HttpMethod.GET,    
+      summary = "Get the details of a single block",
+      description = "This method allows you to fetch the details of a single block for the given coordinates. If only minecraft:air exists at the coordinates, a 404 is returned",
       operationId = "getSingleBlock",
       tags = {"Block"},
+      security = {
+        @OpenApiSecurity(name = "ApiKeyAuth")
+      },
       responses = {
-          @OpenApiResponse(status = "200", content = {@OpenApiContent(from = Block.class)})
+          @OpenApiResponse(status = "200", content = {@OpenApiContent(from = Block.class)}),
+          @OpenApiResponse(status = "404")
+      },
+      pathParams = {
+        @OpenApiParam(name = "x", example = "12", required = true),
+        @OpenApiParam(name = "y", example = "13", required = true),
+        @OpenApiParam(name = "z", example = "14", required = true)
       }
   )
   public void handle(Context ctx) throws Exception {
@@ -48,7 +60,7 @@ public class BlockGET implements Handler {
       String material = Util.getIdentifierAtPosition(world, pos);
 
       if (material.contains("minecraft:air") || material.isBlank()) {
-        ctx.res.sendError(404, "Block not found");
+        ctx.res().sendError(404, "Block not found");
         return;
       }
 
@@ -60,13 +72,17 @@ public class BlockGET implements Handler {
 
       var entries = state.getEntries();
       entries.forEach((k,v) -> {
-        LOGGER.info("{} {}",k, v.toString());
+        LOGGER.info("{} {} {}",k, v.toString(), v.getClass());
         if (k.getName().equals("facing")) {
           block.setFacing(v.toString());
         }
 
         if (k.getName().equals("half")) {
           block.setHalf(v.toString());
+        }
+
+        if (k.getName().equals("rotation")) {
+          block.setRotation(Integer.parseInt(v.toString()));
         }
       });
 

@@ -20,6 +20,8 @@ repositories {
 }
 
 dependencies {
+  annotationProcessor include("io.javalin.community.openapi:openapi-annotation-processor:$project.javalin_version")
+
 	// To change the versions see the gradle.properties file
 	minecraft "com.mojang:minecraft:${project.minecraft_version}"
 	mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
@@ -28,8 +30,33 @@ dependencies {
 	// Fabric API. This is technically optional, but you probably want it anyway.
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 
+  implementation include("io.javalin:javalin:$project.javalin_version")
 
-  implementation group: 'io.javalin', name: 'javalin-bundle', version: '4.6.4'
+  implementation include("io.javalin.community.openapi:javalin-openapi-plugin:$project.javalin_version") // for /openapi route with JSON scheme
+  implementation include("io.javalin.community.openapi:javalin-swagger-plugin:$project.javalin_version") // for Swagger UI
+  implementation include("io.javalin.community.openapi:javalin-redoc-plugin:$project.javalin_version") // for ReDoc UI
+  implementation include("org.jetbrains.kotlin:kotlin-stdlib:1.4.10")
+  implementation include("jakarta.servlet:jakarta.servlet-api:5.0.0")
+  implementation include("org.eclipse.jetty:jetty-server:11.0.2")
+  implementation include("org.eclipse.jetty:jetty-servlet:11.0.2")
+  implementation include("org.eclipse.jetty:jetty-security:11.0.2")
+  implementation include("org.eclipse.jetty:jetty-io:11.0.2")
+  implementation include("org.eclipse.jetty:jetty-util:11.0.2")
+  implementation include("org.eclipse.jetty:jetty-http:11.0.2")
+  implementation include("org.eclipse.jetty:jetty-webapp:11.0.2")
+  implementation include("org.eclipse.jetty.http2:http2-server:11.0.2")
+  implementation include("org.eclipse.jetty.websocket:websocket-jetty-api:11.0.2")
+  implementation include("org.eclipse.jetty.websocket:websocket-jetty-server:11.0.2")
+  implementation include("org.eclipse.jetty.websocket:websocket-jetty-common:11.0.2")
+  implementation include("org.eclipse.jetty.websocket:websocket-core-server:11.0.2")
+  implementation include("org.eclipse.jetty.websocket:websocket-core-common:11.0.2")
+  implementation include("com.fasterxml.jackson.core:jackson-databind:2.13.4")
+  implementation include("com.fasterxml.jackson.core:jackson-core:2.13.4")
+  implementation include("com.fasterxml.jackson.core:jackson-annotations:2.13.4")
+}
+
+task showMeCache doLast() {
+    configurations.compileClasspath.each { println it }
 }
 
 processResources {
@@ -50,12 +77,6 @@ java {
 	// if it is present.
 	// If you remove this line, sources will not be generated.
 	withSourcesJar()
-}
-
-jar {
-	from("LICENSE") {
-		rename { "${it}_${project.archivesBaseName}"}
-	}
 }
 
 // configure the maven publication

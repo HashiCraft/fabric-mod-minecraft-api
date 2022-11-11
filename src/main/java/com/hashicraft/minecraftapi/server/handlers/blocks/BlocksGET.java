@@ -1,22 +1,27 @@
 package com.hashicraft.minecraftapi.server.handlers.blocks;
 
-import java.util.ArrayList;
-
-import com.hashicraft.minecraftapi.server.models.Block;
-import com.hashicraft.minecraftapi.server.util.Util;
+import java.io.IOException;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.hashicraft.minecraftapi.server.models.Block;
+import com.hashicraft.minecraftapi.server.util.Util;
+
 import io.javalin.http.Context;
 import io.javalin.http.Handler;
-import io.javalin.plugin.openapi.annotations.HttpMethod;
-import io.javalin.plugin.openapi.annotations.OpenApi;
-import io.javalin.plugin.openapi.annotations.OpenApiContent;
-import io.javalin.plugin.openapi.annotations.OpenApiResponse;
-import net.minecraft.block.BlockState;
+import io.javalin.openapi.HttpMethod;
+import io.javalin.openapi.OpenApi;
+import io.javalin.openapi.OpenApiContent;
+import io.javalin.openapi.OpenApiResponse;
+import io.javalin.openapi.OpenApiParam;
+import io.javalin.openapi.OpenApiSecurity;
+import jakarta.servlet.ServletOutputStream;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class BlocksGET implements Handler {
 
@@ -28,102 +33,59 @@ public class BlocksGET implements Handler {
   }
 
   @OpenApi(
-      path = "/blocks",            // only necessary to include when using static method references
-      method = HttpMethod.GET,    // only necessary to include when using static method references
+      path = "/v1/blocks/{start x}/{start y}/{start z}/{end x}/{end y}/{end z}",            // only necessary to include when using static method references
+      methods = HttpMethod.GET,    // only necessary to include when using static method references
       summary = "Get multiple blocks",
-      operationId = "getMultipleBlock",
-      tags = {"Block"},
+      description = "Returns an array of blocks between the start and end coordinates in the path, data is returned as a zip file containing a single entry schema.json.",
+      operationId = "getMultipleBlocks",
+      tags = {"Blocks"},
       responses = {
-          @OpenApiResponse(status = "200", content = {@OpenApiContent(from = Block[].class)})
+          @OpenApiResponse(status = "200", content = {@OpenApiContent(from = Block[].class)}, description = "Data is returned as a zipped file containing a single entry")
+      },
+      security = {
+        @OpenApiSecurity(name = "ApiKeyAuth")
+      },
+      pathParams = {
+        @OpenApiParam(name = "start x", example = "12", required = true),
+        @OpenApiParam(name = "start y", example = "13", required = true),
+        @OpenApiParam(name = "start z", example = "14", required = true),
+        @OpenApiParam(name = "end x", example = "22", required = true),
+        @OpenApiParam(name = "end y", example = "15", required = true),
+        @OpenApiParam(name = "end z", example = "19", required = true)
       }
   )
   public void handle(Context ctx) throws Exception {
-      int startX = Integer.parseInt(ctx.pathParam("start_x"));
-      int startY = Integer.parseInt(ctx.pathParam("start_y"));
-      int startZ = Integer.parseInt(ctx.pathParam("start_z"));
+      double startX = Double.parseDouble(ctx.pathParam("start_x"));
+      double startY = Double.parseDouble(ctx.pathParam("start_y"));
+      double startZ = Double.parseDouble(ctx.pathParam("start_z"));
 
-      int endX = Integer.parseInt(ctx.pathParam("end_x"));
-      int endY = Integer.parseInt(ctx.pathParam("end_y"));
-      int endZ = Integer.parseInt(ctx.pathParam("end_z"));
+      double endX = Double.parseDouble(ctx.pathParam("end_x"));
+      double endY = Double.parseDouble(ctx.pathParam("end_y"));
+      double endZ = Double.parseDouble(ctx.pathParam("end_z"));
+
+      Vec3d startPos = new Vec3d(startX, startY, startZ);
+      Vec3d endPos = new Vec3d(endX, endY, endZ);
 
       LOGGER.info("Blocks GET called start_x:{}, start_y:{}, start_z:{} end_x:{}, end_y:{}, end_z:{}",startX,startY,startZ,endX,endY,endZ);
+      Block[] blocks = Util.GetBlocks(startPos, endPos, true, world);
+      
+      // zip the json
+      ObjectMapper mapper = new ObjectMapper();
+      byte[] data = mapper.writeValueAsBytes(blocks);
+      
+      ctx.res().setContentType("application/zip");
+      zipToStream(ctx.outputStream(), "schema.json", data);
+  }
 
-      ArrayList<Block> blocks = new ArrayList<Block>();
-
-      int sz = startZ;
-      int ez = endZ;
-      if (endZ < startZ) {
-        sz = endZ;
-        ez = startZ;
-      }
-
-      int sx = startX;
-      int ex = endX;
-      if (endX < startX) {
-        sx = endX;
-        ex = startX;
-      }
-
-      int sy = startY;
-      int ey = endY;
-      if (endY < startY) {
-        sy = endY;
-        ey = startY;
-      }
-
-      LOGGER.info("Finding blocks start_x:{}, start_y:{}, start_z:{} end_x:{}, end_y:{}, end_z:{}",sx,sy,sz,ex,ey,ez);
-
-      int yPos = 0;
-      int xPos = 0;
-      int zPos = 0;
-
-      for(int y=sy; y <= ey; y ++) {
-        xPos = 0;
-
-        for(int x=sx; x <= ex; x ++) {
-          zPos = 0;
-
-          for(int z=sz; z <= ez; z ++) {
-            BlockPos pos = new BlockPos(x,y,z);
-
-            BlockState state = world.getBlockState(pos);
-            if(state == null) {
-              continue;
-            }
-
-            String material = Util.getIdentifierAtPosition(world, pos);
-
-            Block block = new Block();
-            // set to the local coordinate not the absolute coordinates as this may be placed at a different
-            // location
-
-            block.setX(xPos);
-            block.setY(yPos);
-            block.setZ(zPos);
-            block.setMaterial(material);
-
-            var entries = state.getEntries();
-            entries.forEach((k,v) -> {
-              if (k.getName().equals("facing")) {
-                block.setFacing(v.toString());
-              }
-
-              if (k.getName().equals("half")) {
-                block.setHalf(v.toString());
-              }
-            });
-
-            blocks.add(block);
-            zPos ++;
-          }
-
-          xPos ++;
-        }
-
-        yPos ++;
-      }
-
-      ctx.json(blocks.toArray());
+  private void zipToStream(ServletOutputStream stream, String file, byte[] data) throws IOException {
+    ZipOutputStream zos = new ZipOutputStream(stream);
+    try {
+      zos.putNextEntry(new ZipEntry(file));
+      zos.write(data);
+      zos.closeEntry();
+    } finally {
+      zos.close();
+    }
   }
 
 }

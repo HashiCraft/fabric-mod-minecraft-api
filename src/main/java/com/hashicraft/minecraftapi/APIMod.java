@@ -10,6 +10,7 @@ import net.fabricmc.fabric.api.command.v1.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.text.LiteralText;
+import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
 import static net.minecraft.server.command.CommandManager.*;
 
@@ -33,9 +34,10 @@ public class APIMod implements ModInitializer {
         dispatcher.register(
         literal("position").executes(context -> {
           Vec3d pos = context.getSource().getPosition();
+          String facing =  context.getSource().getEntityOrThrow().getHorizontalFacing().toString();
           context.getSource().sendFeedback(  
             new LiteralText(  
-              String.format("your position is: %d, %d, %d", Math.round(pos.getX()), Math.round(pos.getY()), Math.round(pos.getZ())))
+              String.format("Your position is: '%d %d %d', and you are facing: '%s'", Math.round(pos.getX()), Math.round(pos.getY()), Math.round(pos.getZ()), facing))
             , false);
           return 1;
       }))

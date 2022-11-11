@@ -1,5 +1,7 @@
 package com.hashicraft.minecraftapi.server;
 
+import java.util.Map;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -9,22 +11,24 @@ import com.hashicraft.minecraftapi.server.handlers.block.BlockPOST;
 import com.hashicraft.minecraftapi.server.handlers.blocks.BlocksDELETE;
 import com.hashicraft.minecraftapi.server.handlers.blocks.BlocksGET;
 import com.hashicraft.minecraftapi.server.handlers.blocks.BlocksPOST;
+import com.hashicraft.minecraftapi.server.handlers.blocks.BlocksUndo;
 import com.hashicraft.minecraftapi.server.handlers.health.HealthGET;
-import com.mojang.authlib.yggdrasil.response.ErrorResponse;
 
 import io.javalin.Javalin;
-import io.javalin.plugin.openapi.OpenApiOptions;
-import io.javalin.plugin.openapi.OpenApiPlugin;
-import io.javalin.plugin.openapi.ui.ReDocOptions;
-import io.javalin.plugin.openapi.ui.SwaggerOptions;
-import io.swagger.v3.oas.models.info.Info;
+import io.javalin.openapi.ApiKeyAuth;
+import io.javalin.openapi.OpenApiInfo;
+import io.javalin.openapi.plugin.OpenApiConfiguration;
+import io.javalin.openapi.plugin.OpenApiPlugin;
+import io.javalin.openapi.plugin.SecurityConfiguration;
+import io.javalin.openapi.plugin.redoc.ReDocConfiguration;
+import io.javalin.openapi.plugin.redoc.ReDocPlugin;
 import net.minecraft.server.MinecraftServer;
 
 public class Server {
   private Javalin app;
   public final Logger LOGGER = LoggerFactory.getLogger("server");
 
-  private String AUTH_HEADER = "X-Minecraft-ID";
+  private String AUTH_HEADER = "X-API-Key";
   private String apiKey = "supertopsecret";
 
   public Server() {
@@ -35,53 +39,67 @@ public class Server {
     }
 
     app = Javalin.create(config -> {
-      config.registerPlugin(getConfiguredOpenApiPlugin());
-      config.defaultContentType = "application/json";
-      config.maxRequestSize = 10000000l;
+      config.plugins.register(getConfiguredOpenApiPlugin());
+      config.plugins.register(getConfiguredReDocPlugin());
+      config.http.defaultContentType = "application/json";
+      config.http.maxRequestSize = 10000000l;
     });
 
     app.before(ctx -> {
-      // skip auth check for health path
-      if (ctx.req.getPathInfo().contentEquals("/health") && ctx.req.getMethod().contentEquals("GET")) {
-        return;
-      }
+      LOGGER.info("Checking auth for {}", ctx.req().getPathInfo());
 
-      String authHeader = ctx.req.getHeader(AUTH_HEADER);
-      if (authHeader == null || !authHeader.contentEquals(this.apiKey)) {
-        LOGGER.info("not authorized apikey: {}", authHeader);
-        ctx.res.sendError(401);
+      // skip auth check for health and redoc paths
+      if (
+        ctx.req().getPathInfo().startsWith("/v1") &&
+        !ctx.req().getPathInfo().contentEquals("/v1/health")
+      ) { 
+        String authHeader = ctx.req().getHeader(AUTH_HEADER);
+        if (
+          authHeader == null || !authHeader.contentEquals(this.apiKey)) {
+          LOGGER.info("not authorized apikey: {}", authHeader);
+          ctx.res().sendError(401);
+        }
       }
     });
   }
 
   private static OpenApiPlugin getConfiguredOpenApiPlugin() {
-    Info info = new Info().version("1.0").description("User API");
-    OpenApiOptions options = new OpenApiOptions(info)
-        .activateAnnotationScanningFor("io.javalin.example.java")
-        .path("/swagger-docs") // endpoint for OpenAPI json
-        .swagger(new SwaggerOptions("/swagger-ui")) // endpoint for swagger-ui
-        .reDoc(new ReDocOptions("/redoc")) // endpoint for redoc
-        .defaultDocumentation(doc -> {
-          doc.json("500", ErrorResponse.class);
-          doc.json("503", ErrorResponse.class);
-        });
+    OpenApiInfo info = new OpenApiInfo();
+    info.setTitle("Minecraft Block API");
+    info.setVersion("1.0");
+    info.setDescription("RESTFul API that allows the manipulation of blocks in Minecraft");
+
+    OpenApiConfiguration options = new OpenApiConfiguration();
+    ApiKeyAuth auth = new ApiKeyAuth();
+    
+    options.setInfo(info);
+    options.setSecurity(new SecurityConfiguration().withSecurityScheme("ApiKeyAuth", auth));
+
     return new OpenApiPlugin(options);
+  }
+
+  private static ReDocPlugin getConfiguredReDocPlugin() {
+    ReDocConfiguration reDocConfiguration = new ReDocConfiguration();
+    reDocConfiguration.setUiPath("/redoc"); // by default it's /redoc
+
+    return new ReDocPlugin(reDocConfiguration);
   }
 
   public void start(MinecraftServer server) {
     this.app.start(9090);
     LOGGER.info("Starting server");
 
-    this.app.get("/block/{x}/{y}/{z}", new BlockGET(server.getOverworld()));
-    this.app.post("/block", new BlockPOST(server.getOverworld()));
-    this.app.delete("/block/{x}/{y}/{z}", new BlockDELETE(server.getOverworld()));
+    this.app.get("/v1/block/{x}/{y}/{z}", new BlockGET(server.getOverworld()));
+    this.app.post("/v1/block", new BlockPOST(server.getOverworld()));
+    this.app.delete("/v1/block/{x}/{y}/{z}", new BlockDELETE(server.getOverworld()));
 
-    this.app.get("/blocks/{start_x}/{start_y}/{start_z}/{end_x}/{end_y}/{end_z}", new BlocksGET(server.getOverworld()));
-    this.app.post("/blocks/{x}/{y}/{z}", new BlocksPOST(server.getOverworld()));
-    this.app.delete("/blocks/{start_x}/{start_y}/{start_z}/{end_x}/{end_y}/{end_z}",
+    this.app.get("/v1/blocks/{start_x}/{start_y}/{start_z}/{end_x}/{end_y}/{end_z}", new BlocksGET(server.getOverworld()));
+    this.app.post("/v1/blocks/{x}/{y}/{z}/{rotation}", new BlocksPOST(server.getOverworld()));
+    this.app.delete("/v1/blocks/{start_x}/{start_y}/{start_z}/{end_x}/{end_y}/{end_z}",
         new BlocksDELETE(server.getOverworld()));
+    this.app.put("/v1/blocks/undo/{id}", new BlocksUndo(server.getOverworld()));
 
-    this.app.get("/health", new HealthGET(server.getOverworld()));
+    this.app.get("/v1/health", new HealthGET(server.getOverworld()));
   }
 
 }

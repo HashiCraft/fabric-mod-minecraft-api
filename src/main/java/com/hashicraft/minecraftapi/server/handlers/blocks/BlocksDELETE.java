@@ -5,10 +5,11 @@ import org.slf4j.LoggerFactory;
 
 import io.javalin.http.Context;
 import io.javalin.http.Handler;
-import io.javalin.plugin.openapi.annotations.HttpMethod;
-import io.javalin.plugin.openapi.annotations.OpenApi;
-import io.javalin.plugin.openapi.annotations.OpenApiResponse;
-import net.minecraft.block.BlockState;
+import io.javalin.openapi.HttpMethod;
+import io.javalin.openapi.OpenApi;
+import io.javalin.openapi.OpenApiResponse;
+import io.javalin.openapi.OpenApiParam;
+import io.javalin.openapi.OpenApiSecurity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 import com.hashicraft.minecraftapi.server.util.Util;
@@ -23,13 +24,25 @@ public class BlocksDELETE implements Handler {
   }
 
   @OpenApi(
-      path = "/blocks",            // only necessary to include when using static method references
-      method = HttpMethod.DELETE,
+      path = "/v1/blocks/{start x}/{start y}/{start z}/{end x}/{end y}/{end z}",            // only necessary to include when using static method references
+      methods = HttpMethod.DELETE,
       summary = "Delete multiple blocks",
+      description = "Deletes the blocks at the given location",
       operationId = "deleteMultipleBlocks",
-      tags = {"Block"},
+      tags = {"Blocks"},
+      pathParams = {
+        @OpenApiParam(name = "start x", example = "12", required = true),
+        @OpenApiParam(name = "start y", example = "13", required = true),
+        @OpenApiParam(name = "start z", example = "14", required = true),
+        @OpenApiParam(name = "end x", example = "22", required = true),
+        @OpenApiParam(name = "end y", example = "15", required = true),
+        @OpenApiParam(name = "end z", example = "19", required = true)
+      },
       responses = {
           @OpenApiResponse(status = "200")
+      },
+      security = {
+        @OpenApiSecurity(name = "ApiKeyAuth")
       }
   )
   public void handle(Context ctx) throws Exception {
@@ -71,8 +84,6 @@ public class BlocksDELETE implements Handler {
         for(int x=sx; x <= ex; x ++) {
 
           for(int z=sz; z <= ez; z ++) {
-
-            LOGGER.info("Block DELETE called x:{}, y:{}, z:{}",x,y,z);
 
             BlockPos pos = new BlockPos(x,y,z);
             String material = Util.getIdentifierAtPosition(world, pos);

@@ -12,6 +12,7 @@ public class Block {
   private String material;
   private String facing;
   private String half;
+  private int rotation = -1;
 
 
   public int getX() {
@@ -45,6 +46,7 @@ public class Block {
   public void setMaterial(String material) {
     this.material = material;
   }
+  
 
   public String getFacing() {
     if (this.facing == null) {
@@ -69,5 +71,13 @@ public class Block {
   }
 
   public Block() {
+  }
+  
+  public int getRotation() {
+    return this.rotation;
+  }
+
+  public void setRotation(int rotation) {
+    this.rotation = rotation;
   }
 }

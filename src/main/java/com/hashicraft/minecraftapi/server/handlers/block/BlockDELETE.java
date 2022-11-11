@@ -7,12 +7,14 @@ import com.hashicraft.minecraftapi.server.util.Util;
 
 import io.javalin.http.Context;
 import io.javalin.http.Handler;
-import io.javalin.plugin.openapi.annotations.HttpMethod;
-import io.javalin.plugin.openapi.annotations.OpenApi;
-import io.javalin.plugin.openapi.annotations.OpenApiResponse;
-import net.minecraft.block.BlockState;
+import io.javalin.openapi.HttpMethod;
+import io.javalin.openapi.OpenApi;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
+import io.javalin.openapi.OpenApi;
+import io.javalin.openapi.OpenApiParam;
+import io.javalin.openapi.OpenApiSecurity;
+import io.javalin.openapi.OpenApiResponse;
 
 public class BlockDELETE implements Handler {
 
@@ -24,13 +26,23 @@ public class BlockDELETE implements Handler {
   }
 
   @OpenApi(
-      path = "/block",            // only necessary to include when using static method references
-      method = HttpMethod.DELETE,
+      path = "/v1/block/{x}/{y}/{z}",
+      methods = HttpMethod.DELETE,
       summary = "Delete a single block",
+      description = "Deletes a block at the given location, if the block does not exist, an status code 404 is returned",
       operationId = "deleteSingleBlock",
       tags = {"Block"},
+      security = {
+        @OpenApiSecurity(name = "ApiKeyAuth")
+      },
+      pathParams = {
+        @OpenApiParam(name = "x", example = "12", required = true),
+        @OpenApiParam(name = "y", example = "13", required = true),
+        @OpenApiParam(name = "z", example = "14", required = true)
+      },
       responses = {
-          @OpenApiResponse(status = "200")
+          @OpenApiResponse(status = "200", description = "Block created successfully"),
+          @OpenApiResponse(status = "404", description = "Block does not exist")
       }
   )
   public void handle(Context ctx) throws Exception {
@@ -45,7 +57,7 @@ public class BlockDELETE implements Handler {
 
       // if air no block
       if (material.contains("minecraft:air") || material.isBlank()) {
-        ctx.res.sendError(404, "Block not found");
+        ctx.res().sendError(404, "Block not found");
         return;
       }
 
@@ -53,7 +65,7 @@ public class BlockDELETE implements Handler {
 
       if (!didBreak) {
         LOGGER.error("Unable to delete block {} at {},{},{}", material, x,y,z);
-        ctx.res.sendError(500,"Unable to place block");
+        ctx.res().sendError(500,"Unable to place block");
       }
   }
 }

@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 @JsonInclude(Include.NON_NULL)
 public class Block {
 
+  private String id;
   private int x;
   private int y;
   private int z;
@@ -14,6 +15,13 @@ public class Block {
   private String half;
   private int rotation = -1;
 
+  public String getID() {
+    return this.id;
+  }
+  
+  public void setID(String id) {
+    this.id = id;
+  }
 
   public int getX() {
     return this.x;

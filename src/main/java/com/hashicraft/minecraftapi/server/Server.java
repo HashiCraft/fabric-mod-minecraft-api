@@ -10,6 +10,7 @@ import com.hashicraft.minecraftapi.server.handlers.block.BlocksDELETE;
 import com.hashicraft.minecraftapi.server.handlers.schema.SchemaGET;
 import com.hashicraft.minecraftapi.server.handlers.schema.SchemaPOST;
 import com.hashicraft.minecraftapi.server.handlers.schema.SchemaUndo;
+import com.hashicraft.minecraftapi.server.handlers.schema.SchemaDetails;
 import com.hashicraft.minecraftapi.server.handlers.health.HealthGET;
 
 import io.javalin.Javalin;
@@ -99,6 +100,7 @@ public class Server {
     this.app.get("/v1/schema/{start_x}/{start_y}/{start_z}/{end_x}/{end_y}/{end_z}", new SchemaGET(server.getOverworld()));
     this.app.post("/v1/schema/{x}/{y}/{z}/{rotation}", new SchemaPOST(server.getOverworld()));
     this.app.delete("/v1/schema/undo/{id}", new SchemaUndo(server.getOverworld()));
+    this.app.get("/v1/schema/details/{id}", new SchemaDetails(server.getOverworld()));
 
     // health endpoint
     this.app.get("/v1/health", new HealthGET(server.getOverworld()));

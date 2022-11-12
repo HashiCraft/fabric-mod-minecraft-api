@@ -77,8 +77,6 @@ public class BlocksDELETE implements Handler {
         ey = startY;
       }
 
-      LOGGER.info("Finding blocks start_x:{}, start_y:{}, start_z:{} end_x:{}, end_y:{}, end_z:{}",sx,sy,sz,ex,ey,ez);
-
       for(int y=sy; y <= ey; y ++) {
 
         for(int x=sx; x <= ex; x ++) {

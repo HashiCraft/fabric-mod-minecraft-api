@@ -38,9 +38,9 @@ public class SchemaPOST implements Handler {
   @OpenApi(
       path = "/v1/schema/{x}/{y}/{z}/{rotation}",            // only necessary to include when using static method references
       methods = HttpMethod.POST,    // only necessary to include when using static method references
-      summary = "Create multiple blocks",
-      description = "Creates the blocks at the given location, specifying a rotation of 90,180, or 270, will rotate the given blocks at the origin. Blocks should be provided as zip file containing a single entry. This endpoint returns an operation id that can be used to undo the block placement and restore the original blocks.",
-      operationId = "createMultipleBlocks",
+      summary = "Apply a schema file to create multiple blocks",
+      description = "Applies the given schema and creates the blocks at the given location. Specifying a rotation of 90, 180, or 270, will rotate the given blocks at the origin. Blocks should be provided as zip file containing a single entry. This endpoint returns an operation id that can be used to undo the block placement and restore the original blocks.",
+      operationId = "createSchema",
       tags = {"Schema"},
       requestBody = @OpenApiRequestBody(content = {@OpenApiContent(from = Block[].class)}),
       responses = {
@@ -71,6 +71,8 @@ public class SchemaPOST implements Handler {
     ZipEntry ze = zis.getNextEntry();
 
     if (ze == null) {
+      LOGGER.info("The schema zip file included as the payload is invalid.",x,y,z,rotation);
+
       ctx.res().sendError(400, "Invalid Zip file");
       return;
     }
@@ -86,8 +88,6 @@ public class SchemaPOST implements Handler {
     // into an undo file so that this process can be reversed
     Vec3d startPos = new Vec3d(x, y, z);
     Vec3d endPos = Util.getEndPosFromBlocks(startPos, blocks, rotation);
-
-    LOGGER.info("fetch blocks {}, {}", startPos, endPos);
 
     Block[] existingBlocks = Util.GetBlocks(startPos, endPos, false, world);
     byte[] existingData = mapper.writeValueAsBytes(existingBlocks);
@@ -109,6 +109,8 @@ public class SchemaPOST implements Handler {
     try {
       Util.SetBlocks(startPos, blocks, rotation, world);
     } catch (Exception ex) {
+      LOGGER.info("Unable to place block at {},{},{} error: {}.",x,y,z,ex.toString());
+
       ctx.res().sendError(500, String.format("unable to place blocks %s", ex.toString()));
       return;
     }

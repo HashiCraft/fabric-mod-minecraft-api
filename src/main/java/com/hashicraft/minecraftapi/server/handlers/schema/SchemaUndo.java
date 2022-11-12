@@ -32,15 +32,15 @@ public class SchemaUndo implements Handler {
   @OpenApi(
       path = "/schema/undo/{operation id}",
       methods = HttpMethod.DELETE,
-      summary = "Undo a create operation",
+      summary = "Undo a schema operation",
       description = "Restores the state of the blocks to before the POST operation was called. The operation id can only be used once.",
-      operationId = "createMultipleBlocks",
-      tags = {"Blocks"},
+      operationId = "undoSchema",
+      tags = {"Schema"},
       responses = {
           @OpenApiResponse(status = "200")
       },
       pathParams = {
-        @OpenApiParam(name = "operation id", example = "1234411231535", required = true, description = "Operation id returned from POST /v1/block"),
+        @OpenApiParam(name = "operation id", example = "1234411231535", required = true, description = "Operation id returned from POST /v1/schema"),
       },
       security = {
         @OpenApiSecurity(name = "ApiKeyAuth")
@@ -52,6 +52,9 @@ public class SchemaUndo implements Handler {
     LOGGER.info("Undo blocks using id {}", id);
 
     Path path = Paths.get(String.format("./undo/%s", id));
+    if (!path.toFile().exists()) {
+      ctx.res().sendError(404);
+    }
 
     // read the undo file
     ObjectMapper mapper = new ObjectMapper();
@@ -60,6 +63,8 @@ public class SchemaUndo implements Handler {
     try {
       Util.SetBlocks(null, blocks, 0, world);
     } catch (Exception ex) {
+      LOGGER.info("Unable undo operation error: {}.", ex.toString());
+
       ctx.res().sendError(500, String.format("unable to place blocks %s", ex.toString()));
       return;
     }

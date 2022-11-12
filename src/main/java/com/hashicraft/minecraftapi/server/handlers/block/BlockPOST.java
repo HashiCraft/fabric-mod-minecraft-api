@@ -5,6 +5,8 @@ import com.hashicraft.minecraftapi.server.models.Block;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Base64;
+
 import io.javalin.http.Context;
 import io.javalin.http.Handler;
 import io.javalin.openapi.HttpMethod;
@@ -53,7 +55,8 @@ public class BlockPOST implements Handler {
 
       var item = Registry.BLOCK.get(new Identifier(block.getMaterial()));
       if (item==null) {
-        LOGGER.error("Unable to create block {} material does not exist",block.getMaterial());
+        LOGGER.error("500 Unable to create block, material '{}' does not exist", block.getMaterial());
+
         ctx.res().sendError(500,"Unable to create block " + block.getMaterial() + " material does not exist");
         return;
       }
@@ -88,16 +91,18 @@ public class BlockPOST implements Handler {
         state = state.with(Properties.ROTATION, block.getRotation());
       }
 
-      state.getEntries().forEach((k,v) -> {
-        LOGGER.info("{} {}",k, v.toString());
-      });
-
       BlockPos pos = new BlockPos(block.getX(), block.getY(), block.getZ());
       boolean didSet = world.setBlockState(pos, state);
 
       if (!didSet) {
-        LOGGER.error("Unable to place block {} at {},{},{}", block.getMaterial(), block.getX(), block.getY(), block.getZ());
+        LOGGER.error("500 Unable to place block {} at {},{},{}", block.getMaterial(), block.getX(), block.getY(), block.getZ());
+
         ctx.res().sendError(500,"Unable to place block");
       }
+
+      String id = Base64.getEncoder().withoutPadding().encodeToString(String.format("%s/%s/%s", block.getX(), block.getY(),block.getZ()).getBytes());
+      block.setID(id);
+
+      ctx.json(block);
   }
 }

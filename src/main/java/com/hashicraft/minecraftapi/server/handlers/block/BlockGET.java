@@ -1,5 +1,7 @@
 package com.hashicraft.minecraftapi.server.handlers.block;
 
+import java.util.Base64;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,6 +62,8 @@ public class BlockGET implements Handler {
       String material = Util.getIdentifierAtPosition(world, pos);
 
       if (material.contains("minecraft:air") || material.isBlank()) {
+        LOGGER.info(String.format("404 block does not exist at x:{}, y:{} z:{}", x,y,z));
+
         ctx.res().sendError(404, "Block not found");
         return;
       }
@@ -70,9 +74,12 @@ public class BlockGET implements Handler {
       block.setZ(z);
       block.setMaterial(material);
 
+      // generate and set an id for the string
+      String id = Base64.getEncoder().withoutPadding().encodeToString(String.format("%s/%s/%s", x,y,z).getBytes());
+      block.setID(id);
+
       var entries = state.getEntries();
       entries.forEach((k,v) -> {
-        LOGGER.info("{} {} {}",k, v.toString(), v.getClass());
         if (k.getName().equals("facing")) {
           block.setFacing(v.toString());
         }

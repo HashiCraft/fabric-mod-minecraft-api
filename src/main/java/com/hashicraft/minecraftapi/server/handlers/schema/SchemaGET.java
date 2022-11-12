@@ -35,9 +35,9 @@ public class SchemaGET implements Handler {
   @OpenApi(
       path = "/v1/schema/{start x}/{start y}/{start z}/{end x}/{end y}/{end z}",            // only necessary to include when using static method references
       methods = HttpMethod.GET,    // only necessary to include when using static method references
-      summary = "Get multiple blocks",
+      summary = "Create a schema at the given location",
       description = "Returns an array of blocks between the start and end coordinates in the path, data is returned as a zip file containing a single entry schema.json.",
-      operationId = "getMultipleBlocks",
+      operationId = "getSchema",
       tags = {"Schema"},
       responses = {
           @OpenApiResponse(status = "200", content = {@OpenApiContent(from = Block[].class)}, description = "Data is returned as a zipped file containing a single entry")
@@ -67,6 +67,7 @@ public class SchemaGET implements Handler {
       Vec3d endPos = new Vec3d(endX, endY, endZ);
 
       LOGGER.info("Blocks GET called start_x:{}, start_y:{}, start_z:{} end_x:{}, end_y:{}, end_z:{}",startX,startY,startZ,endX,endY,endZ);
+
       Block[] blocks = Util.GetBlocks(startPos, endPos, true, world);
       
       // zip the json

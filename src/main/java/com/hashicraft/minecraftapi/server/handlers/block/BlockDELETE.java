@@ -9,13 +9,11 @@ import io.javalin.http.Context;
 import io.javalin.http.Handler;
 import io.javalin.openapi.HttpMethod;
 import io.javalin.openapi.OpenApi;
+import io.javalin.openapi.OpenApiParam;
+import io.javalin.openapi.OpenApiResponse;
+import io.javalin.openapi.OpenApiSecurity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
-import io.javalin.openapi.OpenApi;
-import io.javalin.openapi.OpenApiParam;
-import io.javalin.openapi.OpenApiSecurity;
-import io.javalin.openapi.OpenApiResponse;
-
 public class BlockDELETE implements Handler {
 
 	private final Logger LOGGER = LoggerFactory.getLogger("server");
@@ -57,6 +55,8 @@ public class BlockDELETE implements Handler {
 
       // if air no block
       if (material.contains("minecraft:air") || material.isBlank()) {
+        LOGGER.info(String.format("404 block does not exist at x:{}, y:{} z:{}", x,y,z));
+
         ctx.res().sendError(404, "Block not found");
         return;
       }
@@ -64,7 +64,8 @@ public class BlockDELETE implements Handler {
       boolean didBreak = world.breakBlock(new BlockPos(x,y,z),false);
 
       if (!didBreak) {
-        LOGGER.error("Unable to delete block {} at {},{},{}", material, x,y,z);
+        LOGGER.error("Unable to delete block {} at {},{},{} the minecraft server refused to perform this operation", material, x,y,z);
+
         ctx.res().sendError(500,"Unable to place block");
       }
   }

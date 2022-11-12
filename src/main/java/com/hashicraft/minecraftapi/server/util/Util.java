@@ -33,12 +33,15 @@ public class Util {
     return id.toString();
   }
 
+  public static Vec3d getEndPosFromBlocks(Block[] blocks) {
+    return getEndPosFromBlocks(new Vec3d(0,0,0), blocks, 0);
+  }
   // calculates the end position given a collection of blocks to be applied to the given
   // start positon
   public static Vec3d getEndPosFromBlocks(Vec3d startPos, Block[] blocks, int rotation) {
-    int maxX = 0;  
-    int maxY = 0;  
-    int maxZ = 0;  
+    int maxX = -9999;  
+    int maxY = -9999;  
+    int maxZ = -9999;  
 
     for(Block b : blocks) {
         if (b.getX() > maxX) {
@@ -72,6 +75,28 @@ public class Util {
     }
 
     return new Vec3d(startPos.getX() + maxX, startPos.getY() + maxY, startPos.getZ() + maxZ);
+  }
+  
+  public static Vec3d getStartPosFromBlocks(Block[] blocks) {
+    double minX = 9999;  
+    double minY = 9999;  
+    double minZ = 9999;  
+
+    for(Block b : blocks) {
+        if (b.getX() < minX) {
+          minX = b.getX();
+        }
+        
+        if (b.getY()  < minY) {
+          minY = b.getY();
+        }
+        
+        if (b.getZ() < minZ) {
+          minZ = b.getZ();
+        }
+    }
+
+    return new Vec3d(minX, minY, minZ);
   }
 
   // gets the blocks at the given coordinates, if local is true the block positions are set to increment from 0

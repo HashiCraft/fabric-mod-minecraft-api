@@ -1,4 +1,4 @@
-package com.hashicraft.minecraftapi.server.handlers.blocks;
+package com.hashicraft.minecraftapi.server.handlers.schema;
 
 import com.hashicraft.minecraftapi.server.models.Block;
 import com.hashicraft.minecraftapi.server.util.Util;
@@ -26,22 +26,22 @@ import net.minecraft.util.math.Vec3d;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-public class BlocksPOST implements Handler {
+public class SchemaPOST implements Handler {
 
 	private final Logger LOGGER = LoggerFactory.getLogger("server");
   private final ServerWorld world;
 
-  public BlocksPOST(ServerWorld world) {
+  public SchemaPOST(ServerWorld world) {
     this.world = world;
   }
 
   @OpenApi(
-      path = "/v1/blocks/{x}/{y}/{z}/{rotation}",            // only necessary to include when using static method references
+      path = "/v1/schema/{x}/{y}/{z}/{rotation}",            // only necessary to include when using static method references
       methods = HttpMethod.POST,    // only necessary to include when using static method references
       summary = "Create multiple blocks",
       description = "Creates the blocks at the given location, specifying a rotation of 90,180, or 270, will rotate the given blocks at the origin. Blocks should be provided as zip file containing a single entry. This endpoint returns an operation id that can be used to undo the block placement and restore the original blocks.",
       operationId = "createMultipleBlocks",
-      tags = {"Blocks"},
+      tags = {"Schema"},
       requestBody = @OpenApiRequestBody(content = {@OpenApiContent(from = Block[].class)}),
       responses = {
           @OpenApiResponse(status = "200", description = "blocks placed successfully", content = {@OpenApiContent(from = String.class)})

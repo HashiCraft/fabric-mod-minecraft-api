@@ -1,4 +1,4 @@
-package com.hashicraft.minecraftapi.server.handlers.blocks;
+package com.hashicraft.minecraftapi.server.handlers.schema;
 
 import java.io.IOException;
 import java.util.zip.ZipEntry;
@@ -23,22 +23,22 @@ import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.Vec3d;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-public class BlocksGET implements Handler {
+public class SchemaGET implements Handler {
 
 	private final Logger LOGGER = LoggerFactory.getLogger("server");
   private final ServerWorld world;
 
-  public BlocksGET(ServerWorld world) {
+  public SchemaGET(ServerWorld world) {
     this.world = world;
   }
 
   @OpenApi(
-      path = "/v1/blocks/{start x}/{start y}/{start z}/{end x}/{end y}/{end z}",            // only necessary to include when using static method references
+      path = "/v1/schema/{start x}/{start y}/{start z}/{end x}/{end y}/{end z}",            // only necessary to include when using static method references
       methods = HttpMethod.GET,    // only necessary to include when using static method references
       summary = "Get multiple blocks",
       description = "Returns an array of blocks between the start and end coordinates in the path, data is returned as a zip file containing a single entry schema.json.",
       operationId = "getMultipleBlocks",
-      tags = {"Blocks"},
+      tags = {"Schema"},
       responses = {
           @OpenApiResponse(status = "200", content = {@OpenApiContent(from = Block[].class)}, description = "Data is returned as a zipped file containing a single entry")
       },

@@ -1,4 +1,4 @@
-package com.hashicraft.minecraftapi.server.handlers.blocks;
+package com.hashicraft.minecraftapi.server.handlers.block;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,12 +24,12 @@ public class BlocksDELETE implements Handler {
   }
 
   @OpenApi(
-      path = "/v1/blocks/{start x}/{start y}/{start z}/{end x}/{end y}/{end z}",            // only necessary to include when using static method references
+      path = "/v1/block/{start x}/{start y}/{start z}/{end x}/{end y}/{end z}",            // only necessary to include when using static method references
       methods = HttpMethod.DELETE,
       summary = "Delete multiple blocks",
       description = "Deletes the blocks at the given location",
       operationId = "deleteMultipleBlocks",
-      tags = {"Blocks"},
+      tags = {"Block"},
       pathParams = {
         @OpenApiParam(name = "start x", example = "12", required = true),
         @OpenApiParam(name = "start y", example = "13", required = true),

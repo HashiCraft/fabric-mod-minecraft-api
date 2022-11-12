@@ -1,17 +1,15 @@
 package com.hashicraft.minecraftapi.server;
 
-import java.util.Map;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.hashicraft.minecraftapi.server.handlers.block.BlockDELETE;
 import com.hashicraft.minecraftapi.server.handlers.block.BlockGET;
 import com.hashicraft.minecraftapi.server.handlers.block.BlockPOST;
-import com.hashicraft.minecraftapi.server.handlers.blocks.BlocksDELETE;
-import com.hashicraft.minecraftapi.server.handlers.blocks.BlocksGET;
-import com.hashicraft.minecraftapi.server.handlers.blocks.BlocksPOST;
-import com.hashicraft.minecraftapi.server.handlers.blocks.BlocksUndo;
+import com.hashicraft.minecraftapi.server.handlers.block.BlocksDELETE;
+import com.hashicraft.minecraftapi.server.handlers.schema.SchemaGET;
+import com.hashicraft.minecraftapi.server.handlers.schema.SchemaPOST;
+import com.hashicraft.minecraftapi.server.handlers.schema.SchemaUndo;
 import com.hashicraft.minecraftapi.server.handlers.health.HealthGET;
 
 import io.javalin.Javalin;
@@ -22,6 +20,7 @@ import io.javalin.openapi.plugin.OpenApiPlugin;
 import io.javalin.openapi.plugin.SecurityConfiguration;
 import io.javalin.openapi.plugin.redoc.ReDocConfiguration;
 import io.javalin.openapi.plugin.redoc.ReDocPlugin;
+
 import net.minecraft.server.MinecraftServer;
 
 public class Server {
@@ -71,7 +70,7 @@ public class Server {
 
     OpenApiConfiguration options = new OpenApiConfiguration();
     ApiKeyAuth auth = new ApiKeyAuth();
-    
+
     options.setInfo(info);
     options.setSecurity(new SecurityConfiguration().withSecurityScheme("ApiKeyAuth", auth));
 
@@ -89,16 +88,19 @@ public class Server {
     this.app.start(9090);
     LOGGER.info("Starting server");
 
+    // basic single block operation
     this.app.get("/v1/block/{x}/{y}/{z}", new BlockGET(server.getOverworld()));
     this.app.post("/v1/block", new BlockPOST(server.getOverworld()));
     this.app.delete("/v1/block/{x}/{y}/{z}", new BlockDELETE(server.getOverworld()));
-
-    this.app.get("/v1/blocks/{start_x}/{start_y}/{start_z}/{end_x}/{end_y}/{end_z}", new BlocksGET(server.getOverworld()));
-    this.app.post("/v1/blocks/{x}/{y}/{z}/{rotation}", new BlocksPOST(server.getOverworld()));
-    this.app.delete("/v1/blocks/{start_x}/{start_y}/{start_z}/{end_x}/{end_y}/{end_z}",
+    this.app.delete("/v1/block/{start_x}/{start_y}/{start_z}/{end_x}/{end_y}/{end_z}",
         new BlocksDELETE(server.getOverworld()));
-    this.app.put("/v1/blocks/undo/{id}", new BlocksUndo(server.getOverworld()));
 
+    // schema operations
+    this.app.get("/v1/schema/{start_x}/{start_y}/{start_z}/{end_x}/{end_y}/{end_z}", new SchemaGET(server.getOverworld()));
+    this.app.post("/v1/schema/{x}/{y}/{z}/{rotation}", new SchemaPOST(server.getOverworld()));
+    this.app.delete("/v1/schema/undo/{id}", new SchemaUndo(server.getOverworld()));
+
+    // health endpoint
     this.app.get("/v1/health", new HealthGET(server.getOverworld()));
   }
 

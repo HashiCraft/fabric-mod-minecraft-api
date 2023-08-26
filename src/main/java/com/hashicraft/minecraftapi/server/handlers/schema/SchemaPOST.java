@@ -22,40 +22,34 @@ import io.javalin.openapi.OpenApiParam;
 import io.javalin.openapi.OpenApiSecurity;
 import jakarta.servlet.ServletInputStream;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.Vec3i;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class SchemaPOST implements Handler {
 
-	private final Logger LOGGER = LoggerFactory.getLogger("server");
+  private final Logger LOGGER = LoggerFactory.getLogger("server");
   private final ServerWorld world;
 
   public SchemaPOST(ServerWorld world) {
     this.world = world;
   }
 
-  @OpenApi(
-      path = "/v1/schema/{x}/{y}/{z}/{rotation}",            // only necessary to include when using static method references
-      methods = HttpMethod.POST,    // only necessary to include when using static method references
-      summary = "Apply a schema file to create multiple blocks",
-      description = "Applies the given schema and creates the blocks at the given location. Specifying a rotation of 90, 180, or 270, will rotate the given blocks at the origin. Blocks should be provided as zip file containing a single entry. This endpoint returns an operation id that can be used to undo the block placement and restore the original blocks.",
-      operationId = "createSchema",
-      tags = {"Schema"},
-      requestBody = @OpenApiRequestBody(content = {@OpenApiContent(from = Block[].class)}),
-      responses = {
-          @OpenApiResponse(status = "200", description = "blocks placed successfully", content = {@OpenApiContent(from = String.class)})
-      },
-      pathParams = {
-        @OpenApiParam(name = "x", example = "12", required = true),
-        @OpenApiParam(name = "y", example = "13", required = true),
-        @OpenApiParam(name = "z", example = "14", required = true),
-        @OpenApiParam(name = "rotation", example = "90", required = true, description = "rotates the block position about the origin")
-      },
-      security = {
-        @OpenApiSecurity(name = "ApiKeyAuth")
-      }
-  )
+  @OpenApi(path = "/v1/schema/{x}/{y}/{z}/{rotation}", // only necessary to include when using static method references
+      methods = HttpMethod.POST, // only necessary to include when using static method references
+      summary = "Apply a schema file to create multiple blocks", description = "Applies the given schema and creates the blocks at the given location. Specifying a rotation of 90, 180, or 270, will rotate the given blocks at the origin. Blocks should be provided as zip file containing a single entry. This endpoint returns an operation id that can be used to undo the block placement and restore the original blocks.", operationId = "createSchema", tags = {
+          "Schema" }, requestBody = @OpenApiRequestBody(content = {
+              @OpenApiContent(from = Block[].class) }), responses = {
+                  @OpenApiResponse(status = "200", description = "blocks placed successfully", content = {
+                      @OpenApiContent(from = String.class) })
+              }, pathParams = {
+                  @OpenApiParam(name = "x", example = "12", required = true),
+                  @OpenApiParam(name = "y", example = "13", required = true),
+                  @OpenApiParam(name = "z", example = "14", required = true),
+                  @OpenApiParam(name = "rotation", example = "90", required = true, description = "rotates the block position about the origin")
+              }, security = {
+                  @OpenApiSecurity(name = "ApiKeyAuth")
+              })
   public void handle(Context ctx) throws Exception {
 
     int x = Integer.parseInt(ctx.pathParam("x"));
@@ -63,7 +57,7 @@ public class SchemaPOST implements Handler {
     int z = Integer.parseInt(ctx.pathParam("z"));
     int rotation = Integer.parseInt(ctx.pathParam("rotation"));
 
-    LOGGER.info("Blocks POST called x:{}, y:{}, z:{}, rotation:{}",x,y,z,rotation);
+    LOGGER.info("Blocks POST called x:{}, y:{}, z:{}, rotation:{}", x, y, z, rotation);
 
     // the body will be a zip file we need to decode
     ServletInputStream is = ctx.req().getInputStream();
@@ -71,7 +65,7 @@ public class SchemaPOST implements Handler {
     ZipEntry ze = zis.getNextEntry();
 
     if (ze == null) {
-      LOGGER.info("The schema zip file included as the payload is invalid.",x,y,z,rotation);
+      LOGGER.info("The schema zip file included as the payload is invalid.", x, y, z, rotation);
 
       ctx.res().sendError(400, "Invalid Zip file");
       return;
@@ -84,10 +78,10 @@ public class SchemaPOST implements Handler {
     zis.closeEntry();
     zis.close();
 
-    // get the end pos for the blocks, we need to copy the existing blocks 
+    // get the end pos for the blocks, we need to copy the existing blocks
     // into an undo file so that this process can be reversed
-    Vec3d startPos = new Vec3d(x, y, z);
-    Vec3d endPos = Util.getEndPosFromBlocks(startPos, blocks, rotation);
+    Vec3i startPos = new Vec3i(x, y, z);
+    Vec3i endPos = Util.getEndPosFromBlocks(startPos, blocks, rotation);
 
     Block[] existingBlocks = Util.GetBlocks(startPos, endPos, false, world);
     byte[] existingData = mapper.writeValueAsBytes(existingBlocks);
@@ -109,7 +103,7 @@ public class SchemaPOST implements Handler {
     try {
       Util.SetBlocks(startPos, blocks, rotation, world);
     } catch (Exception ex) {
-      LOGGER.info("Unable to place block at {},{},{} error: {}.",x,y,z,ex.toString());
+      LOGGER.info("Unable to place block at {},{},{} error: {}.", x, y, z, ex.toString());
 
       ctx.res().sendError(500, String.format("unable to place blocks %s", ex.toString()));
       return;

@@ -1,6 +1,7 @@
 package com.hashicraft.minecraftapi.server.handlers.block;
 
 import com.hashicraft.minecraftapi.server.models.Block;
+import com.hashicraft.minecraftapi.server.util.Util;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,14 +16,8 @@ import io.javalin.openapi.OpenApiContent;
 import io.javalin.openapi.OpenApiRequestBody;
 import io.javalin.openapi.OpenApiResponse;
 import io.javalin.openapi.OpenApiSecurity;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.enums.BlockHalf;
 import net.minecraft.server.world.ServerWorld;
-import net.minecraft.state.property.Properties;
-import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.registry.Registry;
 
 public class BlockPOST implements Handler {
 
@@ -53,52 +48,8 @@ public class BlockPOST implements Handler {
 
       LOGGER.info("Block POST called x:{}, y:{}, z:{} type:{}",block.getX(),block.getY(),block.getZ(),block.getMaterial());
 
-      var item = Registry.BLOCK.get(new Identifier(block.getMaterial()));
-      if (item==null) {
-        LOGGER.error("500 Unable to create block, material '{}' does not exist", block.getMaterial());
-
-        ctx.res().sendError(500,"Unable to create block " + block.getMaterial() + " material does not exist");
-        return;
-      }
-
-      BlockState state = item.getDefaultState();
-
-      switch(block.getFacing()) {
-        case "north":
-          state = state.with(Properties.HORIZONTAL_FACING, Direction.NORTH);
-          break;
-        case "south":
-          state = state.with(Properties.HORIZONTAL_FACING, Direction.SOUTH);
-          break;
-        case "east":
-          state = state.with(Properties.HORIZONTAL_FACING, Direction.EAST);
-          break;
-        case "west":
-          state = state.with(Properties.HORIZONTAL_FACING, Direction.WEST);
-          break;
-      }
-
-      switch(block.getHalf()) {
-        case "top":
-          state = state.with(Properties.BLOCK_HALF, BlockHalf.TOP);
-          break;
-        case "bottom":
-          state = state.with(Properties.BLOCK_HALF, BlockHalf.BOTTOM);
-          break;
-      }
-
-      if (block.getRotation() > -1 ) {
-        state = state.with(Properties.ROTATION, block.getRotation());
-      }
-
-      BlockPos pos = new BlockPos(block.getX(), block.getY(), block.getZ());
-      boolean didSet = world.setBlockState(pos, state);
-
-      if (!didSet) {
-        LOGGER.error("500 Unable to place block {} at {},{},{}", block.getMaterial(), block.getX(), block.getY(), block.getZ());
-
-        ctx.res().sendError(500,"Unable to place block");
-      }
+      BlockPos pos = new BlockPos(block.getX(),block.getY(),block.getZ());
+      Util.SetBlock(pos, block, block.getRotation(), world);
 
       String id = Base64.getEncoder().withoutPadding().encodeToString(String.format("%s/%s/%s", block.getX(), block.getY(),block.getZ()).getBytes());
       block.setID(id);

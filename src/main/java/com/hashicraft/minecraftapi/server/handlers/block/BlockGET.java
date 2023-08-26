@@ -19,6 +19,7 @@ import io.javalin.openapi.OpenApiSecurity;
 import net.minecraft.block.BlockState;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3i;
 
 public class BlockGET implements Handler {
 
@@ -55,12 +56,10 @@ public class BlockGET implements Handler {
       int z = Integer.parseInt(ctx.pathParam("z"));
 
       LOGGER.info("Blocks GET called x:{}, y:{}, z:{}",x,y,z);
-
-      BlockPos pos = new BlockPos(x,y,z);
-      BlockState state = world.getBlockState(pos);
+      Vec3i pos = new Vec3i(x, y, z);
+      BlockState state = Util.GetBlockState(pos, world);
 
       String material = Util.getIdentifierAtPosition(world, pos);
-
       if (material.contains("minecraft:air") || material.isBlank()) {
         LOGGER.info(String.format("404 block does not exist at x:{}, y:{} z:{}", x,y,z));
 

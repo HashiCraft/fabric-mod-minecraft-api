@@ -1,6 +1,6 @@
 package com.hashicraft.minecraftapi.server.models;
 
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.Vec3i;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -11,21 +11,20 @@ public class SchemaResponse {
   private int startX;
   private int startY;
   private int startZ;
-  
+
   private int endX;
   private int endY;
   private int endZ;
 
-  public SchemaResponse(Vec3d start, Vec3d end) {
-    this.startX = (int)start.getX();
-    this.startY = (int)start.getY();
-    this.startZ = (int)start.getZ();
-    
-    this.endX = (int)end.getX();
-    this.endY = (int)end.getY();
-    this.endZ = (int)end.getZ();
-  }
+  public SchemaResponse(Vec3i start, Vec3i end) {
+    this.startX = (int) start.getX();
+    this.startY = (int) start.getY();
+    this.startZ = (int) start.getZ();
 
+    this.endX = (int) end.getX();
+    this.endY = (int) end.getY();
+    this.endZ = (int) end.getZ();
+  }
 
   public int getStartX() {
     return this.startX;
@@ -50,7 +49,7 @@ public class SchemaResponse {
   public void setStartZ(int z) {
     this.startZ = z;
   }
-  
+
   public int getEndX() {
     return this.endX;
   }

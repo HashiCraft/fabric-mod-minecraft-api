@@ -5,56 +5,78 @@ import com.hashicraft.minecraftapi.server.models.Block;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.registry.Registry;
+import net.minecraft.util.math.Vec3i;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.enums.BlockHalf;
+import net.minecraft.registry.Registries;
+import net.minecraft.registry.RegistryKey;
+import net.minecraft.registry.RegistryKeys;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.Direction;
 
 import java.util.ArrayList;
+import java.util.concurrent.Semaphore;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class Util {
 
+  private static Semaphore readMutex = new Semaphore(5);
+  private static Semaphore writeMutex = new Semaphore(1);
+  private static Semaphore deleteMutex = new Semaphore(1);
+
   public static Logger LOGGER = LoggerFactory.getLogger("server");
 
   public static String getIdentifierAtPosition(ServerWorld world, BlockPos pos) {
+    try {
+      readMutex.acquire();
+      BlockState state = world.getBlockState(pos);
+      if (state == null) {
+        return "";
+      }
 
-    BlockState state = world.getBlockState(pos);
-    if (state == null) {
-      return "";
+      Identifier id = Registries.BLOCK.getId(state.getBlock());
+
+      return id.toString();
+    } catch (InterruptedException ie) {
+      LOGGER.error("Thread interuped whine trying to get position {}", ie.toString());
+    } finally {
+      readMutex.release();
     }
 
-    Identifier id = Registry.BLOCK.getId(state.getBlock());
-
-    return id.toString();
+    return "";
   }
 
-  public static Vec3d getEndPosFromBlocks(Block[] blocks) {
-    return getEndPosFromBlocks(new Vec3d(0,0,0), blocks, 0);
+  public static String getIdentifierAtPosition(ServerWorld world, Vec3i pos) {
+    BlockPos bp = new BlockPos(pos);
+    return getIdentifierAtPosition(world, bp);
   }
-  // calculates the end position given a collection of blocks to be applied to the given
+
+  public static Vec3i getEndPosFromBlocks(Block[] blocks) {
+    return getEndPosFromBlocks(new Vec3i(0, 0, 0), blocks, 0);
+  }
+
+  // calculates the end position given a collection of blocks to be applied to the
+  // given
   // start positon
-  public static Vec3d getEndPosFromBlocks(Vec3d startPos, Block[] blocks, int rotation) {
-    int maxX = -9999;  
-    int maxY = -9999;  
-    int maxZ = -9999;  
+  public static Vec3i getEndPosFromBlocks(Vec3i startPos, Block[] blocks, int rotation) {
+    int maxX = -9999;
+    int maxY = -9999;
+    int maxZ = -9999;
 
-    for(Block b : blocks) {
-        if (b.getX() > maxX) {
-          maxX = b.getX();
-        }
-        
-        if (b.getY() > maxY) {
-          maxY = b.getY();
-        }
-        
-        if (b.getZ() > maxZ) {
-          maxZ = b.getZ();
-        }
+    for (Block b : blocks) {
+      if (b.getX() > maxX) {
+        maxX = b.getX();
+      }
+
+      if (b.getY() > maxY) {
+        maxY = b.getY();
+      }
+
+      if (b.getZ() > maxZ) {
+        maxZ = b.getZ();
+      }
     }
 
     if (rotation == 90) {
@@ -62,105 +84,110 @@ public class Util {
       maxX = maxZ * -1;
       maxZ = tmpX;
     }
-    
+
     if (rotation == 180) {
       maxX = maxX * -1;
       maxZ = maxZ * -1;
     }
-    
+
     if (rotation == 270) {
       int tmpX = maxX;
       maxX = maxZ;
       maxZ = tmpX * -1;
     }
 
-    return new Vec3d(startPos.getX() + maxX, startPos.getY() + maxY, startPos.getZ() + maxZ);
+    return new Vec3i(startPos.getX() + maxX, startPos.getY() + maxY, startPos.getZ() + maxZ);
   }
-  
-  public static Vec3d getStartPosFromBlocks(Block[] blocks) {
-    double minX = 9999;  
-    double minY = 9999;  
-    double minZ = 9999;  
 
-    for(Block b : blocks) {
-        if (b.getX() < minX) {
-          minX = b.getX();
-        }
-        
-        if (b.getY()  < minY) {
-          minY = b.getY();
-        }
-        
-        if (b.getZ() < minZ) {
-          minZ = b.getZ();
-        }
+  public static Vec3i getStartPosFromBlocks(Block[] blocks) {
+    int minX = 9999;
+    int minY = 9999;
+    int minZ = 9999;
+
+    for (Block b : blocks) {
+      if (b.getX() < minX) {
+        minX = b.getX();
+      }
+
+      if (b.getY() < minY) {
+        minY = b.getY();
+      }
+
+      if (b.getZ() < minZ) {
+        minZ = b.getZ();
+      }
     }
 
-    return new Vec3d(minX, minY, minZ);
+    return new Vec3i(minX, minY, minZ);
   }
 
-  // gets the blocks at the given coordinates, if local is true the block positions are set to increment from 0
+  // gets the blocks at the given coordinates, if local is true the block
+  // positions are set to increment from 0
   // if false, the original locations are reutned
-  public static Block[] GetBlocks(Vec3d startPos, Vec3d endPos, boolean local, ServerWorld world) {
+  public static Block[] GetBlocks(Vec3i startPos, Vec3i endPos, boolean local, ServerWorld world) {
+    try {
+      readMutex.acquire();
+
       ArrayList<Block> blocks = new ArrayList<Block>();
 
-      double startX = startPos.getX();
-      double startY = startPos.getY();
-      double startZ = startPos.getZ();
-      
-      double endX = endPos.getX();
-      double endY = endPos.getY();
-      double endZ = endPos.getZ();
+      int startX = startPos.getX();
+      int startY = startPos.getY();
+      int startZ = startPos.getZ();
 
-      double sz = startZ;
-      double ez = endZ;
+      int endX = endPos.getX();
+      int endY = endPos.getY();
+      int endZ = endPos.getZ();
+
+      int sz = startZ;
+      int ez = endZ;
       if (endZ < startZ) {
         sz = endZ;
         ez = startZ;
       }
 
-      double sx = startX;
-      double ex = endX;
+      int sx = startX;
+      int ex = endX;
       if (endX < startX) {
         sx = endX;
         ex = startX;
       }
 
-      double sy = startY;
-      double ey = endY;
+      int sy = startY;
+      int ey = endY;
       if (endY < startY) {
         sy = endY;
         ey = startY;
       }
 
-      double yPos = 0;
-      double xPos = 0;
-      double zPos = 0;
+      int yPos = 0;
+      int xPos = 0;
+      int zPos = 0;
 
-      for(double y=sy; y <= ey; y ++) {
+      for (int y = sy; y <= ey; y++) {
         xPos = 0;
 
-        for(double x=sx; x <= ex; x ++) {
+        for (int x = sx; x <= ex; x++) {
           zPos = 0;
 
-          for(double z=sz; z <= ez; z ++) {
-            BlockPos pos = new BlockPos(x,y,z);
+          for (int z = sz; z <= ez; z++) {
+            BlockPos pos = new BlockPos(x, y, z);
 
             BlockState state = world.getBlockState(pos);
-            if(state == null) {
+            if (state == null) {
               continue;
             }
 
             String material = getIdentifierAtPosition(world, pos);
 
             Block block = new Block();
-            // set to the local coordinate not the absolute coordinates as this may be placed at a different
+            // set to the local coordinate not the absolute coordinates as this may be
+            // placed at a different
             // location
-          
-            if(local) {
-              block.setX((int)xPos);
-              block.setY((int)yPos);
-              block.setZ((int)zPos);
+
+            if (local) {
+              block.setX((int) xPos);
+              block.setY((int) yPos);
+              block.setZ((int) zPos);
             } else {
               block.setX(pos.getX());
               block.setY(pos.getY());
@@ -170,7 +197,7 @@ public class Util {
             block.setMaterial(material);
 
             var entries = state.getEntries();
-            entries.forEach((k,v) -> {
+            entries.forEach((k, v) -> {
               if (k.getName().equals("facing")) {
                 block.setFacing(v.toString());
               }
@@ -178,58 +205,92 @@ public class Util {
               if (k.getName().equals("half")) {
                 block.setHalf(v.toString());
               }
-        
+
               if (k.getName().equals("rotation")) {
                 block.setRotation(Integer.parseInt(v.toString()));
               }
             });
 
             blocks.add(block);
-            zPos ++;
+            zPos++;
           }
 
-          xPos ++;
+          xPos++;
         }
 
-        yPos ++;
+        yPos++;
       }
 
-    return blocks.toArray(new Block[blocks.size()]);
+      return blocks.toArray(new Block[blocks.size()]);
+
+    } catch (InterruptedException ie) {
+      LOGGER.error("Thread interuped whine trying to get position {}", ie.toString());
+    } finally {
+      readMutex.release();
+    }
+
+    return new Block[0];
+  }
+
+  public static BlockState GetBlockState(Vec3i pos, ServerWorld world) {
+    try {
+      readMutex.acquire();
+      return world.getBlockState(new BlockPos(pos));
+
+    } catch (InterruptedException ie) {
+      LOGGER.error("Thread interuped whine trying to get position {}", ie.toString());
+    } finally {
+      readMutex.release();
+    }
+
+    return null;
+  }
+
+  public static boolean BreakBlock(Vec3i pos, ServerWorld world) {
+    try {
+      deleteMutex.acquire();
+
+      boolean didBreak = world.breakBlock(new BlockPos(pos), false);
+      return didBreak;
+
+    } catch (InterruptedException ie) {
+      LOGGER.error("Thread interuped whine trying to get position {}", ie.toString());
+    } finally {
+      deleteMutex.release();
+    }
+
+    return false;
   }
 
   // if startPos is specified the block is placed relative to start pos
-  public static void SetBlocks(Vec3d startPos, Block[] blocks, int rotation, ServerWorld world) throws Exception {
-    for(Block block : blocks) {
-      var item = Registry.BLOCK.get(new Identifier(block.getMaterial()));
-      if (item==null) {
-        throw new Exception(String.format("unable to create block, material %s does not exist", block.getMaterial()));
-      }
+  public static void SetBlocks(Vec3i startPos, Block[] blocks, int rotation, ServerWorld world) throws Exception {
+    for (Block block : blocks) {
 
-      BlockPos pos = new BlockPos(block.getX(),block.getY(),block.getZ());
+      BlockPos pos = new BlockPos(block.getX(), block.getY(), block.getZ());
 
-      if(startPos != null) {
-        double blockX = block.getX();
-        double blockY = block.getY();
-        double blockZ = block.getZ();
+      if (startPos != null) {
+        int blockX = block.getX();
+        int blockY = block.getY();
+        int blockZ = block.getZ();
 
-        if(rotation == 90) {
-          double tmpX = blockX;
+        if (rotation == 90) {
+          int tmpX = blockX;
           blockX = blockZ * -1;
           blockZ = tmpX;
         }
-    
+
         if (rotation == 180) {
           blockX = blockX * -1;
           blockZ = blockZ * -1;
         }
-        
+
         if (rotation == 270) {
-          double tmpX = blockX;
+          int tmpX = blockX;
           blockX = blockZ;
           blockZ = tmpX * -1;
         }
 
-        pos = new BlockPos(blockX + startPos.getX(),blockY + startPos.getY(),blockZ + startPos.getZ());
+        pos = new BlockPos(blockX + startPos.getX(), blockY + startPos.getY(), blockZ + startPos.getZ());
       }
 
       BlockState state = world.getBlockState(pos);
@@ -240,18 +301,33 @@ public class Util {
         boolean didBreak = world.breakBlock(pos, false);
 
         if (!didBreak) {
-          throw new Exception(String.format("unable to create block at position, %s, can't break existing block at that location", pos.toString()));
+          throw new Exception(String.format(
+              "unable to create block at position, %s, can't break existing block at that location", pos.toString()));
         }
       }
 
       // do not place air
-      if(block.getMaterial().equals("minecraft:air")) {
+      if (block.getMaterial().equals("minecraft:air")) {
         continue;
       }
 
-      state = item.getDefaultState();
+      // create the block
+      SetBlock(pos, block, rotation, world);
+    }
+  }
+
+  public static void SetBlock(BlockPos pos, Block block, int rotation, ServerWorld world) throws Exception {
+    try {
+      writeMutex.acquire();
+
+      var item = Registries.BLOCK.get(new Identifier(block.getMaterial()));
+      if (item == null) {
+        throw new Exception(String.format("unable to create block, material %s does not exist", block.getMaterial()));
+      }
+
+      BlockState state = item.getDefaultState();
       try {
-        switch(block.getFacing()) {
+        switch (block.getFacing()) {
           case "north":
             switch (rotation) {
               case 0:
@@ -317,11 +393,11 @@ public class Util {
             }
             break;
         }
-      } catch(Exception ex) {
-        //LOGGER.error("Unable to set direction for block: {}", ex.getMessage());
+      } catch (Exception ex) {
+        // LOGGER.error("Unable to set direction for block: {}", ex.getMessage());
       }
 
-      switch(block.getHalf()) {
+      switch (block.getHalf()) {
         case "top":
           state = state.with(Properties.BLOCK_HALF, BlockHalf.TOP);
           break;
@@ -332,7 +408,7 @@ public class Util {
 
       if (block.getRotation() > -1) {
         int rot = 0;
-        switch(rotation) {
+        switch (rotation) {
           case 0:
             rot = block.getRotation();
             break;
@@ -347,21 +423,24 @@ public class Util {
             break;
         }
 
-        if(rot >=16 ) {
+        if (rot >= 16) {
           rot = rot - 16;
         }
 
-        LOGGER.info("orig {}, new {}", block.getRotation(), rot);
-            
         state = state.with(Properties.ROTATION, rot);
       }
 
       boolean didSet = world.setBlockState(pos, state);
 
       if (!didSet) {
-        //LOGGER.error("Unable to place block {} at {},{},{}",block.getMaterial(),block.getX(),block.getY(),block.getZ());
+        // LOGGER.error("Unable to place block {} at
+        // {},{},{}",block.getMaterial(),block.getX(),block.getY(),block.getZ());
         throw new Exception(String.format("unable to create block at position, %s", pos.toString()));
       }
+    } catch (InterruptedException ie) {
+      LOGGER.error("Thread interuped whine trying to get position {}", ie.toString());
+    } finally {
+      writeMutex.release();
     }
   }
 }
